@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌱 AI Crop Advisor</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #d4fc79, #96e6a1);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: white;
+      padding: 25px;
+      border-radius: 20px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+      text-align: center;
+      width: 380px;
+    }
+    h2 {
+      margin-bottom: 20px;
+      color: #2c662d;
+    }
+    label {
+      display: inline-block;
+      background: #2c662d;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: 0.3s;
+    }
+    label:hover {
+      background: #45a049;
+    }
+    input[type="file"] {
+      display: none;
+    }
+    button {
+      margin-top: 15px;
+      padding: 12px 20px;
+      background: #388e3c;
+      border: none;
+      color: white;
+      font-size: 16px;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    .result {
+      margin-top: 20px;
+      text-align: center;
+      padding: 15px;
+      background: #f4f9f4;
+      border-radius: 12px;
+      font-size: 20px;
+      color: #333;
+      font-weight: bold;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .icon {
+      font-size: 40px;
+    }
+    .good {
+      color: green;
+    }
+    .bad {
+      color: red;
+    }
+    audio {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🌱 AI Crop Advisor</h2>
+
+    <!-- Camera capture -->
+    <label for="fileInput">📷 Take Photo</label>
+    <input type="file" id="fileInput" accept="image/jpeg" capture="environment" />
+
+    <br><br>
+    <button onclick="uploadImage()">Analyze</button>
+
+    <div class="result" id="local"></div>
+
+    <audio id="audioPlayer"></audio>
+  </div>
+
+  <script>
+    async function uploadImage() {
+      const fileInput = document.getElementById("fileInput");
+      if (!fileInput.files[0]) {
+        alert("Please take a photo first 📷");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("image", fileInput.files[0], "photo.jpg");
+
+      let res = await fetch("http://127.0.0.1:5000/analyze", {
+        method: "POST",
+        body: formData,
+      });
+
+      let data = await res.json();
+
+      // ✅/❌ icon logic
+      let iconHTML = data.is_good 
+        ? `<div class="icon good">✅</div>` 
+        : `<div class="icon bad">❌</div>`;
+
+      // Show only local language text + icon
+      document.getElementById("local").innerHTML = 
+        `${iconHTML}<div>${data.local_text}</div>`;
+
+      // Play audio automatically
+      let audioBase64 = data.audio;
+      let audioBlob = new Blob(
+        [Uint8Array.from(atob(audioBase64), c => c.charCodeAt(0))],
+        { type: "audio/mp3" }
+      );
+      let audioURL = URL.createObjectURL(audioBlob);
+      let audioPlayer = document.getElementById("audioPlayer");
+      audioPlayer.src = audioURL;
+      audioPlayer.play();
+    }
+  </script>
+</body>
+</html>
